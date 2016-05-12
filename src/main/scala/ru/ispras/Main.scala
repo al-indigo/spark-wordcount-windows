@@ -52,7 +52,7 @@ class WordCountWindow(val sc: SparkContext, val src_dir: String, val dest_file: 
     val pw = new PrintWriter(new File(dest_file))
     for (window_start <- 0 to windows_number) {
       val window_end = window_start + window
-      logInfo("Calculated windows percentage: " + window_start * 1.0 / windows_number)
+      logInfo("Calculated windows percentage: " + window_start * 1.0 / (windows_number + 1))
       logInfo(s"Calculating window ($window_start, $window_end)")
       val window_files = files_as_strings slice (window_start, window_end)
       calcWindow(window_files, window_start.toString + "-" + window_end.toString, pw)

@@ -1,1 +1,0 @@
-## Simple maven scala and spark project setup

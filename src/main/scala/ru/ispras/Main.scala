@@ -17,7 +17,7 @@ object Main extends Logging {
       val className = this.getClass.getName.stripSuffix("$")
       println(
         s"""
-          |usage (local run): mvn exec:java -Dexec.mainClass=$className -Dexec.args="<src_dir> <res_dir> <window_size>"
+          |usage (local run): mvn exec:java -Dexec.mainClass=$className -Dexec.args="<src_dir> <dest_file> <window_size>"
         """.stripMargin)
       System.exit(1)
     }
@@ -26,27 +26,15 @@ object Main extends Logging {
     val dest_file = args(1)
     val window = args(2).toInt
 
-    val localMaster = "local[1]"
     val conf = new SparkConf().setAppName("WordCountWindow")
-    // check whether local run or not
-    // spark-submit will automatically set spark.master in cluster run
-    // val master = conf.get("spark.master", localMaster)
-    // val localRun = master.sta rtsWith("local")
-//    if (localRun)
-//      conf.setMaster(master)
     val sc = new SparkContext(conf)
 
 
     val wcw = new WordCountWindow(sc, src_dir, dest_file, window)
     wcw.calculate()
 
-    // can't do sc.stop() (or nothing) here since it causes program to exit with non-zero code
-    // see http://stackoverflow.com/questions/28362341/error-utils-uncaught-exception-in-thread-sparklistenerbus
-//    if (localRun)
-//      System.exit(0)
 
   }
-
 }
 
 class WordCountWindow(val sc: SparkContext, val src_dir: String, val dest_file: String, val window: Int) extends Logging {
@@ -73,12 +61,8 @@ class WordCountWindow(val sc: SparkContext, val src_dir: String, val dest_file: 
   }
 
   private def calcWindow(windowFiles: Array[String], windowName: String, pw: PrintWriter): Unit = {
-    val counts: Long = windowFiles.foldLeft(0L)( (currentCounts, srcFile) => {
-      val textFile = sc.textFile(srcFile)
-      val srcFileCounts = textFile.flatMap(line => line.split(" ")).count()
-      currentCounts + srcFileCounts
-    })
-//    counts.saveAsTextFile(fs.getFullPath(res_dir + "/window_" + windowName))
+    val text_files = sc.textFile(windowFiles.mkString(","))
+    val counts = text_files.flatMap(line => line.split(" ")).count()
     logInfo(s"WordCount for window $windowName is $counts")
     pw.write(windowName + " " + counts + "\n")
   }
